@@ -22,48 +22,35 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package melky.clanchatcountryflags;
 
-import com.google.common.collect.ImmutableMap;
-import java.awt.image.BufferedImage;
-import java.util.Map;
-import net.runelite.client.util.ImageUtil;
+package melky.worldflags;
 
-enum ClanWorldRegion
+import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigItem;
+
+@ConfigGroup("worldflags")
+public interface WorldFlagsConfig extends Config
 {
-	// Follow ISO 3166-1 alpha-2 for country codes
-	FLAG_US(0),
-	FLAG_GB(1),
-	FLAG_AU(3),
-	FLAG_DE(7);
-
-	private static final Map<Integer, ClanWorldRegion> worldRegionMap;
-
-	private final int regionId;
-
-	static
+	@ConfigItem(
+		keyName = "showClanFlags",
+		name = "Show clan chat flags",
+		description = "Show amount of time remaining instead of completion time",
+		position = 1
+	)
+	default boolean showClanFlags()
 	{
-		ImmutableMap.Builder<Integer, ClanWorldRegion> builder = new ImmutableMap.Builder<>();
-
-		for (final ClanWorldRegion worldRegion : values())
-		{
-			builder.put(worldRegion.regionId, worldRegion);
-		}
-		worldRegionMap = builder.build();
+		return true;
 	}
 
-	ClanWorldRegion(int regionId)
+	@ConfigItem(
+		keyName = "showFriendsFlags",
+		name = "Show friends flags",
+		description = "Show amount of time remaining instead of completion time",
+		position = 2
+	)
+	default boolean showFriendsFlags()
 	{
-		this.regionId = regionId;
-	}
-
-	BufferedImage loadImage()
-	{
-		return ImageUtil.getResourceStreamFromClass(getClass(), "/" + this.name().toLowerCase() + ".png");
-	}
-
-	static ClanWorldRegion getByRegionId(int regionId)
-	{
-		return worldRegionMap.get(regionId);
+		return true;
 	}
 }
