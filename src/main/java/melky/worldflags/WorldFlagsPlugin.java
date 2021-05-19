@@ -225,11 +225,13 @@ public class WorldFlagsPlugin extends Plugin
 			final Widget listWidget = containerWidget.getChild(i);
 			String worldString = Text.removeTags(listWidget.getText());
 			// In case the string already contains a country flag
-			if (!worldString.matches("^World\\s?.*$"))
+			String regex = flagMode ? "^W.*$" : "^World\\s?.*$";
+			if (!worldString.matches(regex))
 			{
 				continue;
 			}
-			worldString = worldString.replace("World ", "");
+			String replaceRegex = flagMode ? "W" : "World ";
+			worldString = worldString.replace(replaceRegex, "");
 			final int worldNumber = Integer.parseInt(worldString);
 
 			final World targetPlayerWorld = worldResult.findWorld(worldNumber);
@@ -241,7 +243,7 @@ public class WorldFlagsPlugin extends Plugin
 			final int worldRegionId = targetPlayerWorld.getLocation(); // 0 - us, 1 - gb, 3 - au, 7 - de
 			final int regionModIconId = WorldRegionFlag.getByRegionId(worldRegionId).ordinal() + modIconsStart;
 
-			listWidget.setText(listWidget.getText().replace("World ", "") + " <img=" + (regionModIconId) + ">");
+			listWidget.setText(worldString + " <img=" + (regionModIconId) + ">");
 		}
 	}
 
@@ -259,7 +261,7 @@ public class WorldFlagsPlugin extends Plugin
 				continue;
 			}
 			final String worldNum = listWidget.getText().replaceAll("\\s?<img=\\d+>$", "");
-			listWidget.setText("World " + worldNum);
+			listWidget.setText((flagMode ? "W" : "World ") + worldNum);
 		}
 	}
 
