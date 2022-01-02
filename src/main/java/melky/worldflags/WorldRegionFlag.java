@@ -59,7 +59,7 @@ enum WorldRegionFlag
 
 	BufferedImage loadImage()
 	{
-		return ImageUtil.getResourceStreamFromClass(getClass(), "/" + this.name().toLowerCase() + ".png");
+		return ImageUtil.loadImageResource(getClass(), "/" + this.name().toLowerCase() + ".png");
 	}
 
 	static WorldRegionFlag getByRegionId(int regionId)
