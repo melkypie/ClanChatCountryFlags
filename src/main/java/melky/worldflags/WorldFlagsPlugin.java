@@ -90,7 +90,6 @@ public class WorldFlagsPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		clientThread.invoke(() -> {
-			unloadRegionIcons();
 			toggleWorldsToFlags(false, true);
 			toggleWorldsToFlags(false, false);
 		});
@@ -160,31 +159,6 @@ public class WorldFlagsPlugin extends Plugin
 		}
 
 		log.debug("Loaded region icons");
-		client.setModIcons(newModIcons);
-	}
-
-	private void unloadRegionIcons()
-	{
-		final IndexedSprite[] modIcons = client.getModIcons();
-
-		if (modIconsStart == -1 || modIcons == null)
-		{
-			return;
-		}
-
-		final WorldRegionFlag[] worldRegions = WorldRegionFlag.values();
-		//Icons that were loaded before region icons were loaded
-		final IndexedSprite[] oldModIcons = Arrays.copyOf(modIcons, modIconsStart);
-
-		//Icons that were loaded after region icons were loaded
-		final IndexedSprite[] futureModIcons = Arrays.copyOfRange(modIcons, modIconsStart + worldRegions.length,
-			modIcons.length);
-
-		//Array without the region icons
-		final IndexedSprite[] newModIcons = ArrayUtils.addAll(oldModIcons, futureModIcons);
-
-		modIconsStart = -1;
-		log.debug("Unloaded region icons");
 		client.setModIcons(newModIcons);
 	}
 
