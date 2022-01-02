@@ -32,11 +32,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.IndexedSprite;
-import net.runelite.api.ScriptID;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -48,7 +46,6 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import net.runelite.http.api.worlds.World;
 import net.runelite.http.api.worlds.WorldResult;
-import org.apache.commons.lang3.ArrayUtils;
 
 @Slf4j
 @PluginDescriptor(
@@ -81,8 +78,10 @@ public class WorldFlagsPlugin extends Plugin
 	{
 		clientThread.invoke(() -> {
 			loadRegionIcons();
-			toggleWorldsToFlags(config.showClanFlags(), true);
-			toggleWorldsToFlags(config.showFriendsFlags(), false);
+			for (WorldFlagsMode flagMode : WorldFlagsMode.values())
+			{
+				toggleWorldsToFlags(flagMode);
+			}
 		});
 	}
 
@@ -90,8 +89,10 @@ public class WorldFlagsPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		clientThread.invoke(() -> {
-			toggleWorldsToFlags(false, true);
-			toggleWorldsToFlags(false, false);
+			for (WorldFlagsMode flagMode : WorldFlagsMode.values())
+			{
+				toggleWorldsToFlags(flagMode, true);
+			}
 		});
 	}
 
@@ -112,28 +113,32 @@ public class WorldFlagsPlugin extends Plugin
 			return;
 		}
 
-		if (event.getKey().equals("showClanFlags"))
+		switch (event.getKey())
 		{
-			clientThread.invoke(() -> toggleWorldsToFlags(config.showClanFlags(), true));
-		}
-		else if (event.getKey().equals("showFriendsFlags"))
-		{
-			clientThread.invoke(() -> toggleWorldsToFlags(config.showFriendsFlags(), false));
+			case "showClanFlags":
+				clientThread.invoke(() -> toggleWorldsToFlags(WorldFlagsMode.CHAT_CHANNEL));
+				break;
+			case "showClanChannelFlags":
+				clientThread.invoke(() -> toggleWorldsToFlags(WorldFlagsMode.CLAN_CHANNEL));
+				break;
+			case "showGuestChannelFlags":
+				clientThread.invoke(() -> toggleWorldsToFlags(WorldFlagsMode.GUEST_CHANNEL));
+				break;
+			case "showFriendsFlags":
+				clientThread.invoke(() -> toggleWorldsToFlags(WorldFlagsMode.FRIENDS));
+				break;
 		}
 	}
 
 	@Subscribe
 	public void onScriptPostFired(ScriptPostFired event)
 	{
-		if (event.getScriptId() == ScriptID.FRIENDS_CHAT_CHANNEL_REBUILD)
-		{
-			clientThread.invoke(() -> toggleWorldsToFlags(config.showClanFlags(), true));
-		}
-		else if (event.getScriptId() == ScriptID.FRIENDS_UPDATE)
-		{
-			clientThread.invoke(() -> toggleWorldsToFlags(config.showFriendsFlags(), false));
-		}
+		WorldFlagsMode flagsMode = WorldFlagsMode.byScriptID.getOrDefault(event.getScriptId(), null);
 
+		if (flagsMode != null)
+		{
+			clientThread.invoke(() -> toggleWorldsToFlags(flagsMode));
+		}
 	}
 
 	private void loadRegionIcons()
@@ -162,50 +167,61 @@ public class WorldFlagsPlugin extends Plugin
 		client.setModIcons(newModIcons);
 	}
 
-	private void toggleWorldsToFlags(boolean worldsToFlags, boolean flagMode)
+	private void toggleWorldsToFlags(WorldFlagsMode flagMode)
 	{
-		Widget containerWidget;
-		if (flagMode)
-		{
-			containerWidget = client.getWidget(WidgetInfo.FRIENDS_CHAT_LIST);
-		}
-		else
-		{
-			containerWidget = client.getWidget(WidgetInfo.FRIEND_LIST_NAMES_CONTAINER);
-		}
+		toggleWorldsToFlags(flagMode, false);
+	}
 
+	private void toggleWorldsToFlags(WorldFlagsMode flagMode, boolean forceDisable)
+	{
+		Widget containerWidget = client.getWidget(flagMode.getContainerWidget());
 		if (containerWidget == null || containerWidget.getChildren() == null)
 		{
 			return;
 		}
-
-		if (worldsToFlags)
+		boolean flagsEnable = false;
+		switch (flagMode)
 		{
-			changeWorldsToFlags(containerWidget, flagMode);
+			case CHAT_CHANNEL:
+				flagsEnable = config.showClanFlags();
+				break;
+			case CLAN_CHANNEL:
+				flagsEnable = config.showClanChannelFlags();
+				break;
+			case GUEST_CHANNEL:
+				flagsEnable = config.showGuestChannelFlags();
+				break;
+			case FRIENDS:
+				flagsEnable = config.showFriendsFlags();
+				break;
 		}
-		else
+
+		if (forceDisable || (!flagsEnable))
 		{
 			changeFlagsToWorlds(containerWidget, flagMode);
 		}
+		else
+		{
+			changeWorldsToFlags(containerWidget, flagMode);
+		}
 	}
 
-	private void changeWorldsToFlags(Widget containerWidget, boolean flagMode) // true - clan, false - friends
+	private void changeWorldsToFlags(Widget containerWidget, WorldFlagsMode flagMode)
 	{
 		final WorldResult worldResult = worldService.getWorlds();
 		// Iterate every 3 widgets starting at 1, since the order of widgets is name, world, icon (for clan chat)
 		// Iterate every 3 widget starting at 2, since the order is name, previous name icon, world (for friends)
-		for (int i = flagMode ? 1 : 2; i < containerWidget.getChildren().length; i += 3)
+		for (int i = flagMode.getWidgetStartPosition(); i < containerWidget.getChildren().length; i += 3)
 		{
 			final Widget listWidget = containerWidget.getChild(i);
 			String worldString = Text.removeTags(listWidget.getText());
 			// In case the string already contains a country flag
-			String regex = flagMode ? "^W.*$" : "^World\\s?.*$";
+			String regex = flagMode.getWorldMatchRegex();
 			if (!worldString.matches(regex))
 			{
 				continue;
 			}
-			String replaceRegex = flagMode ? "W" : "World ";
-			worldString = worldString.replace(replaceRegex, "");
+			worldString = worldString.replace(flagMode.getWorldReplaceRegex(), "");
 			final int worldNumber = Integer.parseInt(worldString);
 
 			final World targetPlayerWorld = worldResult.findWorld(worldNumber);
@@ -221,11 +237,11 @@ public class WorldFlagsPlugin extends Plugin
 		}
 	}
 
-	private void changeFlagsToWorlds(Widget containerWidget, boolean flagMode) // true - clan, false - friends
+	private void changeFlagsToWorlds(Widget containerWidget, WorldFlagsMode flagMode)
 	{
 		// Iterate every 3 widgets starting at 1, since the order of widgets is name, world, icon (for clan chat)
 		// Iterate every 3 widget starting at 2, since the order is name, previous name icon, world (for friends)
-		for (int i = flagMode ? 1 : 2; i < containerWidget.getChildren().length; i += 3)
+		for (int i = flagMode.getWidgetStartPosition(); i < containerWidget.getChildren().length; i += 3)
 		{
 			final Widget listWidget = containerWidget.getChild(i);
 			final String worldString = removeColorTags(listWidget.getText());
@@ -235,11 +251,12 @@ public class WorldFlagsPlugin extends Plugin
 				continue;
 			}
 			final String worldNum = listWidget.getText().replaceAll("\\s?<img=\\d+>$", "");
-			listWidget.setText((flagMode ? "W" : "World ") + worldNum);
+			listWidget.setText((flagMode.getWorldReplaceRegex()) + worldNum);
 		}
 	}
 
-	private String removeColorTags(String text) {
+	private String removeColorTags(String text)
+	{
 		return text.replaceAll("<(/)?col(=([0-9]|[a-z]){6})*>", "");
 	}
 }

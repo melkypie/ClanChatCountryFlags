@@ -25,54 +25,28 @@
 
 package melky.worldflags;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
+import com.google.common.collect.Maps;
+import java.util.Arrays;
+import java.util.Map;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import net.runelite.api.ScriptID;
+import net.runelite.api.widgets.WidgetInfo;
 
-@ConfigGroup("worldflags")
-public interface WorldFlagsConfig extends Config
+@Getter
+@RequiredArgsConstructor
+public enum WorldFlagsMode
 {
-	@ConfigItem(
-		keyName = "showClanFlags",
-		name = "Show chat channel flags",
-		description = "Replaces the string W with a flag of the region the world is in inside chat channels",
-		position = 1
-	)
-	default boolean showClanFlags()
-	{
-		return true;
-	}
+	CHAT_CHANNEL(ScriptID.FRIENDS_CHAT_CHANNEL_REBUILD, WidgetInfo.FRIENDS_CHAT_LIST, 1, "^W.*$", "W"),
+	CLAN_CHANNEL(4397, WidgetInfo.CLAN_MEMBER_LIST, 1, "^W.*$", "W"),
+	GUEST_CHANNEL(4399, WidgetInfo.CLAN_GUEST_MEMBER_LIST, 1, "^W.*$", "W"),
+	FRIENDS(ScriptID.FRIENDS_UPDATE, WidgetInfo.FRIEND_LIST_NAMES_CONTAINER, 2, "^World\\s?.*$", "World "),
+	;
 
-	@ConfigItem(
-		keyName = "showFriendsFlags",
-		name = "Show friends flags",
-		description = "Replaces the string W with a flag of the region the world is in inside friends list",
-		position = 2
-	)
-	default boolean showFriendsFlags()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "showClanChannelFlags",
-		name = "Show clan channel flags",
-		description = "Replaces the string W with a flag of the region the world is in inside clan channels",
-		position = 3
-	)
-	default boolean showClanChannelFlags()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "showGuestChannelFlags",
-		name = "Show guest channel flags",
-		description = "Replaces the string W with a flag of the region the world is in inside guest clan channels",
-		position = 4
-	)
-	default boolean showGuestChannelFlags()
-	{
-		return true;
-	}
+	private final int scriptID;
+	private final WidgetInfo containerWidget;
+	private final int widgetStartPosition;
+	private final String worldMatchRegex;
+	private final String worldReplaceRegex;
+	public static final Map<Integer, WorldFlagsMode> byScriptID = Maps.uniqueIndex(Arrays.asList(values()), WorldFlagsMode::getScriptID);
 }
