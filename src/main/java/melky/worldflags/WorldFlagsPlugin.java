@@ -211,7 +211,7 @@ public class WorldFlagsPlugin extends Plugin
 		final WorldResult worldResult = worldService.getWorlds();
 		// Iterate every 3 widgets starting at 1, since the order of widgets is name, world, icon (for clan chat)
 		// Iterate every 3 widget starting at 2, since the order is name, previous name icon, world (for friends)
-		for (int i = flagMode.getWidgetStartPosition(); i < containerWidget.getChildren().length; i += 3)
+		for (int i = flagMode.getWidgetStartPosition() + amountOfChildrenToSkip(containerWidget, flagMode); i < containerWidget.getChildren().length; i += 3)
 		{
 			final Widget listWidget = containerWidget.getChild(i);
 			String worldString = Text.removeTags(listWidget.getText());
@@ -241,7 +241,7 @@ public class WorldFlagsPlugin extends Plugin
 	{
 		// Iterate every 3 widgets starting at 1, since the order of widgets is name, world, icon (for clan chat)
 		// Iterate every 3 widget starting at 2, since the order is name, previous name icon, world (for friends)
-		for (int i = flagMode.getWidgetStartPosition(); i < containerWidget.getChildren().length; i += 3)
+		for (int i = flagMode.getWidgetStartPosition() + amountOfChildrenToSkip(containerWidget, flagMode); i < containerWidget.getChildren().length; i += 3)
 		{
 			final Widget listWidget = containerWidget.getChild(i);
 			final String worldString = removeColorTags(listWidget.getText());
@@ -253,6 +253,26 @@ public class WorldFlagsPlugin extends Plugin
 			final String worldNum = listWidget.getText().replaceAll("\\s?<img=\\d+>$", "");
 			listWidget.setText((flagMode.getWorldReplaceRegex()) + worldNum);
 		}
+	}
+
+	private int amountOfChildrenToSkip(Widget containerWidget, WorldFlagsMode flagMode)
+	{
+		// CLAN_CHANNEL and GUEST_CHANNEL first start with a certain amount of Children without text (semi-random, based on amount of players in the channel?)
+		// These are of type 3, don't contain any text, but they do contain a name, e.g. <col=ff9040>ClanMemberName</col>
+		// This messes flagMode.getWidgetStartPosition() up. For that reason we calculate how many additional Children there are to skip them.
+		int additionalChildren = 0;
+		if (flagMode == WorldFlagsMode.CLAN_CHANNEL || flagMode == WorldFlagsMode.GUEST_CHANNEL)
+		{
+			for (int i = 0; i < containerWidget.getChildren().length; i++)
+			{
+				if (containerWidget.getChild(i).getType() != 3)
+				{
+					additionalChildren = containerWidget.getChild(i).getIndex();
+					break;
+				}
+			}
+		}
+		return additionalChildren;
 	}
 
 	private String removeColorTags(String text)
