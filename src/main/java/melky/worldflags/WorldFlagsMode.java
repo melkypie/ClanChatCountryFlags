@@ -37,10 +37,10 @@ import net.runelite.api.widgets.WidgetInfo;
 @RequiredArgsConstructor
 public enum WorldFlagsMode
 {
-	CHAT_CHANNEL(ScriptID.FRIENDS_CHAT_CHANNEL_REBUILD, WidgetInfo.FRIENDS_CHAT_LIST, 1, "^W.*$", "W"),
-	CLAN_CHANNEL(4397, WidgetInfo.CLAN_MEMBER_LIST, 1, "^W.*$", "W"),
-	GUEST_CHANNEL(4399, WidgetInfo.CLAN_GUEST_MEMBER_LIST, 1, "^W.*$", "W"),
-	FRIENDS(ScriptID.FRIENDS_UPDATE, WidgetInfo.FRIEND_LIST_NAMES_CONTAINER, 2, "^World\\s?.*$", "World "),
+	CHAT_CHANNEL(ScriptID.FRIENDS_CHAT_CHANNEL_REBUILD, WidgetInfo.FRIENDS_CHAT_LIST, 1, "^W[0-9]{1,3}\\b", "W"),
+	CLAN_CHANNEL(4397, WidgetInfo.CLAN_MEMBER_LIST, 1, "^W[0-9]{1,3}\\b", "W"),
+	GUEST_CHANNEL(4399, WidgetInfo.CLAN_GUEST_MEMBER_LIST, 1, "^W[0-9]{1,3}\\b", "W"),
+	FRIENDS(ScriptID.FRIENDS_UPDATE, WidgetInfo.FRIEND_LIST_NAMES_CONTAINER, 2, "^World\\s[0-9]{1,3}\\b", "World "),
 	;
 
 	private final int scriptID;
